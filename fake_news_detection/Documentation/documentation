@@ -1,0 +1,537 @@
+Estrutura do Projeto
+O projeto possui a seguinte estrutura de pastas:
+
+fake_news_detection/
+    ├── data/
+        ├──class_distribution.png
+        ├──news.csv
+    ├── documentation/
+        ├──documentation
+    ├── models/
+        ├── fake_news_model.pkl
+    ├── src/
+    ├── templates/
+       ├── index.html
+    └── utils/
+    └──README.md
+    └──pcodigo.ipynb
+
+
+A pasta data é usada para armazenar os dados do projeto, como o arquivo CSV contendo as notícias (news.csv) utilizado para treinar e testar o modelo.
+A pasta models é utilizada para armazenar o modelo treinado e salvo em disco.
+A pasta src contém o código-fonte do projeto, incluindo o arquivo principal app.py.
+A pasta templates contém os arquivos HTML para a interface do aplicativo web.
+A pasta utils armazena arquivos de utilidade, como bibliotecas ou scripts adicionais.
+
+Código-fonte
+Aqui está o código-fonte completo do projeto:
+
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+import joblib
+from flask import Flask, render_template, request, jsonify
+
+# Criar a estrutura de pastas
+if not os.path.exists("fake_news_detection"):
+    os.mkdir("fake_news_detection")
+os.chdir("fake_news_detection")
+
+folders = ["data", "models", "src", "utils", "templates"]
+for folder in folders:
+    os.mkdir(folder)
+
+# Carregar o dataset
+dataset_file = r"C:\Users\T26432\Documents\GitHub\projeto fake\fake_news_detection\data\news.csv"
+
+# Carregar o dataset em um DataFrame
+dataset = pd.read_csv(dataset_file)
+
+# Análise exploratória de dados
+# Exemplo de gráficos e estatísticas
+plt.figure(figsize=(10, 6))
+sns.countplot(x="label", data=dataset)
+plt.title("Distribuição das Classes")
+plt.savefig("data/class_distribution.png")
+
+# Pré-processamento dos textos
+# Exemplo de pré-processamento: remoção de stopwords e pontuações
+nltk.download('stopwords')
+nltk.download('punkt')
+
+stopwords = set(stopwords.words("english"))
+
+def preprocess_text(text):
+    tokens = word_tokenize(text.lower())
+    tokens = [token for token in tokens if token.isalpha()]
+    tokens = [token for token in tokens if token not in stopwords]
+    preprocessed_text = " ".join(tokens)
+    return preprocessed_text
+
+dataset["preprocessed_text"] = dataset["text"].apply(preprocess_text)
+
+# Dividir o dataset em conjunto de treinamento e teste
+train_data, test_data, train_labels, test_labels = train_test_split(
+    dataset["preprocessed_text"],
+    dataset["label"],
+    test_size=0.2,
+    random_state=42
+)
+
+# Criar um pipeline para vetorização e classificação
+pipeline = Pipeline([
+    ('tfidf', TfidfVectorizer()),
+    ('clf', MultinomialNB())  # Experimente diferentes classificadores (Naive Bayes, RandomForest, MLP, etc.)
+])
+
+# Definir os parâmetros para busca em grade
+parameters = {
+    'tfidf__max_df': [0.5, 0.75, 1.0],
+    'tfidf__ngram_range': [(1, 1), (1, 2)],  # Experimente diferentes configurações
+    'clf__alpha': [0.1, 1.0, 10.0]
+}
+
+# Realizar busca em grade para encontrar os melhores parâmetros
+grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=1)
+grid_search.fit(train_data, train_labels)
+
+# Avaliar o modelo
+train_predictions = grid_search.predict(train_data)
+train_accuracy = accuracy_score(train_labels, train_predictions)
+print("Acurácia no conjunto de treinamento:", train_accuracy)
+
+test_predictions = grid_search.predict(test_data)
+test_accuracy = accuracy_score(test_labels, test_predictions)
+print("Acurácia no conjunto de teste:", test_accuracy)
+
+print("Relatório de classificação:")
+print(classification_report(test_labels, test_predictions))
+
+# Salvar o modelo treinado
+model_path = "models/fake_news_model.pkl"
+joblib.dump(grid_search.best_estimator_, model_path)
+
+# Carregar o modelo treinado
+model = joblib.load(model_path)
+
+# Iniciar o aplicativo Flask
+app = Flask(__name__)
+
+# Rota para a página inicial
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+# Rota para a classificação de textos
+@app.route("/classify", methods=["POST"])
+def classify():
+    text = request.form["text"]
+    prediction = model.predict([text])[0]
+    return jsonify({"prediction": prediction})
+
+# Executar o aplicativo Flask
+if __name__ == "__main__":
+    app.run()
+
+
+Aqui está a documentação do projeto:
+
+Estrutura do Projeto
+O projeto possui a seguinte estrutura de pastas:
+
+css
+Copy code
+fake_news_detection/
+    ├── data/
+    ├── models/
+    ├── src/
+    ├── templates/
+    └── utils/
+A pasta data é usada para armazenar os dados do projeto, como o arquivo CSV contendo as notícias (news.csv) utilizado para treinar e testar o modelo.
+A pasta models é utilizada para armazenar o modelo treinado e salvo em disco.
+A pasta src contém o código-fonte do projeto, incluindo o arquivo principal app.py.
+A pasta templates contém os arquivos HTML para a interface do aplicativo web.
+A pasta utils armazena arquivos de utilidade, como bibliotecas ou scripts adicionais.
+Dependências
+Certifique-se de ter as seguintes bibliotecas instaladas antes de executar o projeto:
+
+pandas
+matplotlib
+seaborn
+nltk
+scikit-learn
+joblib
+flask
+Você pode instalar as bibliotecas usando o comando pip install <nome-da-biblioteca>.
+
+Código-fonte
+Aqui está o código-fonte completo do projeto:
+
+python
+Copy code
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+import joblib
+from flask import Flask, render_template, request, jsonify
+
+# Criar a estrutura de pastas
+if not os.path.exists("fake_news_detection"):
+    os.mkdir("fake_news_detection")
+os.chdir("fake_news_detection")
+
+folders = ["data", "models", "src", "utils", "templates"]
+for folder in folders:
+    os.mkdir(folder)
+
+# Carregar o dataset
+dataset_file = r"C:\Users\T26432\Documents\GitHub\projeto fake\fake_news_detection\data\news.csv"
+
+# Carregar o dataset em um DataFrame
+dataset = pd.read_csv(dataset_file)
+
+# Análise exploratória de dados
+# Exemplo de gráficos e estatísticas
+plt.figure(figsize=(10, 6))
+sns.countplot(x="label", data=dataset)
+plt.title("Distribuição das Classes")
+plt.savefig("data/class_distribution.png")
+
+# Pré-processamento dos textos
+# Exemplo de pré-processamento: remoção de stopwords e pontuações
+nltk.download('stopwords')
+nltk.download('punkt')
+
+stopwords = set(stopwords.words("english"))
+
+def preprocess_text(text):
+    tokens = word_tokenize(text.lower())
+    tokens = [token for token in tokens if token.isalpha()]
+    tokens = [token for token in tokens if token not in stopwords]
+    preprocessed_text = " ".join(tokens)
+    return preprocessed_text
+
+dataset["preprocessed_text"] = dataset["text"].apply(preprocess_text)
+
+# Dividir o dataset em conjunto de treinamento e teste
+train_data, test_data, train_labels, test_labels = train_test_split(
+    dataset["preprocessed_text"],
+    dataset["label"],
+    test_size=0.2,
+    random_state=42
+)
+
+# Criar um pipeline para vetorização e classificação
+pipeline = Pipeline([
+    ('tfidf', TfidfVectorizer()),
+    ('clf', MultinomialNB())  # Experimente diferentes classificadores (Naive Bayes, RandomForest, MLP, etc.)
+])
+
+# Definir os parâmetros para busca em grade
+parameters = {
+    'tfidf__max_df': [0.5, 0.75, 1.0],
+    'tfidf__ngram_range': [(1, 1), (1, 2)],  # Experimente diferentes configurações
+    'clf__alpha': [0.1, 1.0, 10.0]
+}
+
+# Realizar busca em grade para encontrar os melhores parâmetros
+grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=1)
+grid_search.fit(train_data, train_labels)
+
+# Avaliar o modelo
+train_predictions = grid_search.predict(train_data)
+train_accuracy = accuracy_score(train_labels, train_predictions)
+print("Acurácia no conjunto de treinamento:", train_accuracy)
+
+test_predictions = grid_search.predict(test_data)
+test_accuracy = accuracy_score(test_labels, test_predictions)
+print("Acurácia no conjunto de teste:", test_accuracy)
+
+print("Relatório de classificação:")
+print(classification_report(test_labels, test_predictions))
+
+# Salvar o modelo treinado
+model_path = "models/fake_news_model.pkl"
+joblib.dump(grid_search.best_estimator_, model_path)
+
+# Carregar o modelo treinado
+model = joblib.load(model_path)
+
+# Iniciar o aplicativo Flask
+app = Flask(__name__)
+
+# Rota para a página inicial
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+# Rota para a classificação de textos
+@app.route("/classify", methods=["POST"])
+def classify():
+    text = request.form["text"]
+    prediction = model.predict([text])[0]
+    return jsonify({"prediction": prediction})
+
+# Executar o aplicativo Flask
+if __name__ == "__main__":
+    app.run()
+
+
+Arquivo HTML
+Aqui está o conteúdo do arquivo index.html localizado na pasta templates:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detecção de Fake News</title>
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-field {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .input-field textarea {
+            width: 100%;
+            height: 120px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            resize: none;
+        }
+        
+        .input-field button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        
+        .result {
+            margin-top: 20px;
+        }
+        
+        .result p {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .rating-section {
+            margin-top: 30px;
+        }
+        
+        .rating-section h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .rating-section p {
+            color: #666;
+        }
+        
+        .rating-form {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .rating-form label {
+            margin-right: 10px;
+        }
+        
+        .rating-form input[type="radio"] {
+            display: none;
+        }
+        
+        .rating-form label.star {
+            color: #ccc;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        
+        .rating-form label.star:before {
+            content: "\2605";
+            display: inline-block;
+        }
+        
+        .rating-form input[type="radio"]:checked ~ label.star:before {
+            color: #fdd835;
+        }
+        
+        .rating-form textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            padding: 10px;
+            resize: none;
+        }
+        
+        .rating-form button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .rating-list {
+            margin-top: 30px;
+        }
+        
+        .rating-list h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .rating-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .rating-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .rating-list .star {
+            color: #fdd835;
+            font-size: 20px;
+        }
+        
+        .rating-list .comment {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detecção de Fake News</h1>
+    <div class="container">
+        <div class="input-field">
+            <textarea id="text-input" placeholder="Insira o texto para classificação"></textarea>
+        </div>
+        <div class="input-field">
+            <button id="classify-btn" onclick="classifyText()">Classificar</button>
+        </div>
+        <div class="result">
+            <p>Resultado:</p>
+            <div id="result-text"></div>
+        </div>
+        <div class="rating-section">
+            <h2>Avalie o aplicativo</h2>
+            <p>Selecione a pontuação de 1 a 5 estrelas e deixe um comentário.</p>
+            <form class="rating-form" onsubmit="submitRating(event)">
+                <div>
+                    <input type="radio" id="star5" name="rating" value="5">
+                    <label class="star" for="star5"></label>
+                    <input type="radio" id="star4" name="rating" value="4">
+                    <label class="star" for="star4"></label>
+                    <input type="radio" id="star3" name="rating" value="3">
+                    <label class="star" for="star3"></label>
+                    <input type="radio" id="star2" name="rating" value="2">
+                    <label class="star" for="star2"></label>
+                    <input type="radio" id="star1" name="rating" value="1">
+                    <label class="star" for="star1"></label>
+                </div>
+                <textarea id="comment" placeholder="Deixe seu comentário"></textarea>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+        <div class="rating-list">
+            <h3>Avaliações</h3>
+            <ul id="rating-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        function classifyText() {
+            const text = document.getElementById("text-input").value;
+            const resultText = document.getElementById("result-text");
+            
+            fetch("/classify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "text=" + encodeURIComponent(text)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const prediction = data.prediction;
+                resultText.innerHTML = `<p>${prediction}</p>`;
+            });
+        }
+
+        function submitRating(event) {
+            event.preventDefault();
+
+            const rating = document.querySelector('input[name="rating"]:checked').value;
+            const comment = document.getElementById("comment").value;
+
+            const ratingList = document.getElementById("rating-list");
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `<span class="star">&#9733;</span> Rating: ${rating}<br><span class="comment">${comment}</span>`;
+            ratingList.appendChild(listItem);
+
+            // Limpar o formulário
+            document.querySelector('input[name="rating"]:checked').checked = false;
+            document.getElementById("comment").value = "";
+        }
+    </script>
+</body>
+</html>
+
+

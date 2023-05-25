@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detecção de Fake News</title>
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-field {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .input-field textarea {
+            width: 100%;
+            height: 120px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            resize: none;
+        }
+        
+        .input-field button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        
+        .result {
+            margin-top: 20px;
+        }
+        
+        .result p {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .rating-section {
+            margin-top: 30px;
+        }
+        
+        .rating-section h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .rating-section p {
+            color: #666;
+        }
+        
+        .rating-form {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .rating-form label {
+            margin-right: 10px;
+        }
+        
+        .rating-form input[type="radio"] {
+            display: none;
+        }
+        
+        .rating-form label.star {
+            color: #ccc;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        
+        .rating-form label.star:before {
+            content: "\2605";
+            display: inline-block;
+        }
+        
+        .rating-form input[type="radio"]:checked ~ label.star:before {
+            color: #fdd835;
+        }
+        
+        .rating-form textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            padding: 10px;
+            resize: none;
+        }
+        
+        .rating-form button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .rating-list {
+            margin-top: 30px;
+        }
+        
+        .rating-list h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .rating-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .rating-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .rating-list .star {
+            color: #fdd835;
+            font-size: 20px;
+        }
+        
+        .rating-list .comment {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detecção de Fake News</h1>
+    <div class="container">
+        <div class="input-field">
+            <textarea id="text-input" placeholder="Insira o texto para classificação"></textarea>
+        </div>
+        <div class="input-field">
+            <button id="classify-btn" onclick="classifyText()">Classificar</button>
+        </div>
+        <div class="result">
+            <p>Resultado:</p>
+            <div id="result-text"></div>
+        </div>
+        <div class="rating-section">
+            <h2>Avalie o aplicativo</h2>
+            <p>Selecione a pontuação de 1 a 5 estrelas e deixe um comentário.</p>
+            <form class="rating-form" onsubmit="submitRating(event)">
+                <div>
+                    <input type="radio" id="star5" name="rating" value="5">
+                    <label class="star" for="star5"></label>
+                    <input type="radio" id="star4" name="rating" value="4">
+                    <label class="star" for="star4"></label>
+                    <input type="radio" id="star3" name="rating" value="3">
+                    <label class="star" for="star3"></label>
+                    <input type="radio" id="star2" name="rating" value="2">
+                    <label class="star" for="star2"></label>
+                    <input type="radio" id="star1" name="rating" value="1">
+                    <label class="star" for="star1"></label>
+                </div>
+                <textarea id="comment" placeholder="Deixe seu comentário"></textarea>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+        <div class="rating-list">
+            <h3>Avaliações</h3>
+            <ul id="rating-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        function classifyText() {
+            const text = document.getElementById("text-input").value;
+            const resultText = document.getElementById("result-text");
+            
+            fetch("/classify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "text=" + encodeURIComponent(text)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const prediction = data.prediction;
+                resultText.innerHTML = `<p>${prediction}</p>`;
+            });
+        }
+
+        function submitRating(event) {
+            event.preventDefault();
+
+            const rating = document.querySelector('input[name="rating"]:checked').value;
+            const comment = document.getElementById("comment").value;
+
+            const ratingList = document.getElementById("rating-list");
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `<span class="star">&#9733;</span> Rating: ${rating}<br><span class="comment">${comment}</span>`;
+            ratingList.appendChild(listItem);
+
+            // Limpar o formulário
+            document.querySelector('input[name="rating"]:checked').checked = false;
+            document.getElementById("comment").value = "";
+        }
+    </script>
+</body>
+</html>
